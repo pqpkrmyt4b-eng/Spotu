@@ -1,99 +1,113 @@
-import { useState, useEffect, useRef } from "react"; 
-const COUNTRY_FLAGS = { 
- FR: { flag: " ", name: "France", lang: "fr" }, 
- US: { flag: " ", name: "États-Unis", lang: "en" }, 
- GB: { flag: " ", name: "Royaume-Uni", lang: "en" }, 
- DE: { flag: " ", name: "Allemagne", lang: "de" }, 
- ES: { flag: " ", name: "Espagne", lang: "es" }, 
- IT: { flag: " ", name: "Italie", lang: "it" }, 
- PT: { flag: " ", name: "Portugal", lang: "pt" }, 
- BE: { flag: " ", name: "Belgique", lang: "fr" }, 
- CH: { flag: " ", name: "Suisse", lang: "fr" }, 
- CA: { flag: " ", name: "Canada", lang: "fr" }, 
- MA: { flag: " ", name: "Maroc", lang: "fr" }, 
- SN: { flag: " ", name: "Sénégal", lang: "fr" }, 
- DZ: { flag: " ", name: "Algérie", lang: "fr" }, 
- TN: { flag: " ", name: "Tunisie", lang: "fr" }, 
- BR: { flag: " ", name: "Brésil", lang: "pt" }, 
- MX: { flag: " ", name: "Mexique", lang: "es" }, 
- JP: { flag: " ", name: "Japon", lang: "ja" }, 
- CN: { flag: " ", name: "Chine", lang: "zh" }, 
- AU: { flag: " ", name: "Australie", lang: "en" }, 
- NL: { flag: " ", name: "Pays-Bas", lang: "nl" }, 
-}; 
-async function detectCountry() { 
- try { 
- const res = await fetch("https://ipapi.co/json/"); 
- const data = await res.json(); 
- return data.country_code || "FR"; 
- } catch { 
- return "FR"; 
- } 
-} 
-const styles = ` 
- @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700;&display=swap'); 
- * { box-sizing: border-box; margin: 0; padding: 0; } 
- :root { 
- --bg: #0a0a0f; --surface: #13131a; --card: #1a1a24; 
- --accent: #e8ff47; --accent2: #ff6b35; --text: #f0f0f5; 
- --muted: #6b6b80; --border: rgba(255,255,255,0.07); --error: #ff4747;  } 
- body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); }
- .app { max-width: 430px; margin: 0 auto; min-height: 100vh; background: var(--bg); position: relative; }
- /* AUTH */ 
- .auth-screen { min-height: 100vh; display: flex; flex-direction: column; padding: 0 24px 40px; animation: fadeUp 0.4s ease both; }
- auth-logo { font-family: 'Bebas Neue', sans-serif; font-size: 52px; letter-spacing: 4px;  color: var(--accent); }
- auth-tagline { font-size: 14px; color: var(--muted); margin-top: 8px; }  
- auth-title { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 2px; margin-bottom: 6px; }
- auth-sub { font-size: 14px; color: var(--muted); margin-bottom: 28px; }  
- form-group { margin-bottom: 14px; } 
- .form-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; display blocky; }
- form-input { width: 100%; padding: 16px 18px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; color: var(--text); font family: 'DM Sans', sans-serif; font-size: 15px outline: none; transition: border-color 0.2s; }
- form-input:focus { border-color: var(--accent); } 
- .form-input::placeholder { color: var(--muted); } 
- .form-input.err { border-color: var(--error); } 
- .error-msg { font-size: 12px; color: var(--error); margin-top: 6px; }  .
- .auth-btn { width: 100%; padding: 18px; background: var(--accent); color: #0a0a0f; border: none; border-radius: 16px; font-weight: 800; font-size: 17px; cursor: pointer; font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; margin-top: 8px; display: flex; align -items: center; justify-content: center; gap: 8px; transition: all 0.15s; } }
- .auth-btn:disabled { opacity: 0.6; } 
- .social-btn { width: 100%; padding: 16px; background: var(--card); color: var(--text); border 1px solid var(--border); border-radius: 16px; font-weight: 600; font-size: 15px; cursor: pointer; font-family: 'DM sans-serif; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px
- auth-switch { text-align: center; margin-top: 24px; font-size: 14px; color: var(--muted); .
- auth-switch span { color: var(--accent); font-weight: 600; cursor: pointer; }  .
- .auth-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(muted); } 
- .auth-divider::before,.auth-divider::after { content:''; flex:1; height:1px; background:var(--border); }
- .alert-box { background: rgba(255,71,71,0.1); border: 1px solid rgba(255,71,71,0.3); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; color: var(--error); font-size: 14px; } 
- .spinner { width: 20px; height: 20px; border: 2px solid rgba(0,0,0,0.3); border-top-color: #0a0a0f; border-radius: 50%; animation: spin 0.7s linear infinite; } 
- @keyframes spin { to { transform: rotate(360deg); } } 
- /* ONBOARDING */ 
- .onboarding { min-height: 100vh; padding: 60px 24px 40px; animation: fadeUp 0.4s ease both; }
- .step-dots { display: flex; gap: 6px; margin-bottom: 32px; } 
- .step-dot { height: 4px; border-radius: 2px; background: var(--border); flex: 1; transition: background 0.3s; } 
- .step-dot.active { background: var(--accent); } 
- .onboard-title { font-family: 'Bebas Neue', sans-serif; font-size: 34px; letter-spacing: 2px; margin-bottom: 8px; } 
- .onboard-sub { font-size: 14px; color: var(--muted); margin-bottom: 28px; }  
- .sport-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 24px; } 
- .sport-option { background: var(--card); border: 1.5px solid var(--border); border-radius: 16px; padding: 16px 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; color: var(--muted); font-weight: 500; transition: all 0.2s; } 
- .sport-option.selected { border-color: var(--accent); background: rgba(232,255,71,0.08); colors: var(--accent); } 
- .sport-option span:first-child { font-size: 28px; } 
- .level-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }  
- .level-option { background: var(--card); border: 1.5px solid var(--border); border-radius: 16px; padding: 16px 20px; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: all 0.2s; }
- .level-option.selected { border-color: var(--accent); background: rgba(232,255,71,0.06); }  
- .level-name { font-weight: 600; font-size: 15px; } 
- .level-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }  
- .level-option.selected 
- .level-name { color: var(--accent); } 
- .onboard-btn { width: 100%; padding: 18px; background: var(--accent); color: #0a0a0f; border: none; border-radius: 16px; font-weight: 800; font-size: 17px; cursor: pointer; font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; }
+import { useState, useEffect, useRef } from "react";
 
- /* NAV */
+const COUNTRY_FLAGS = {
+FR: { flag: "FR", name: "France", lang: "fr" },
+US: { flag: "US", name: "Etats-Unis", lang: "en" },
+GB: { flag: "GB", name: "Royaume-Uni", lang: "en" },
+DE: { flag: "DE", name: "Allemagne", lang: "de" },
+ES: { flag: "ES", name: "Espagne", lang: "es" },
+IT: { flag: "IT", name: "Italie", lang: "it" },
+PT: { flag: "PT", name: "Portugal", lang: "pt" },
+BE: { flag: "BE", name: "Belgique", lang: "fr" },
+CH: { flag: "CH", name: "Suisse", lang: "fr" },
+CA: { flag: "CA", name: "Canada", lang: "fr" },
+MA: { flag: "MA", name: "Maroc", lang: "fr" },
+SN: { flag: "SN", name: "Senegal", lang: "fr" },
+DZ: { flag: "DZ", name: "Algerie", lang: "fr" },
+TN: { flag: "TN", name: "Tunisie", lang: "fr" },
+BR: { flag: "BR", name: "Bresil", lang: "pt" },
+MX: { flag: "MX", name: "Mexique", lang: "es" },
+JP: { flag: "JP", name: "Japon", lang: "ja" },
+CN: { flag: "CN", name: "Chine", lang: "zh" },
+AU: { flag: "AU", name: "Australie", lang: "en" },
+NL: { flag: "NL", name: "Pays-Bas", lang: "nl" },
+};
+
+async function detectCountry() {
+try {
+const res = await fetch("https://ipapi.co/json/");
+const data = await res.json();
+return data.country_code || "FR";
+} catch {
+return "FR";
+}
+}
+
+function getFlagEmoji(countryCode) {
+if (!countryCode) return "🌍";
+const codePoints = countryCode
+.toUpperCase()
+.split("")
+.map(char => 127397 + char.charCodeAt(0));
+return String.fromCodePoint(...codePoints);
+}
+
+const styles = `
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+--bg: #0a0a0f; --surface: #13131a; --card: #1a1a24;
+--accent: #e8ff47; --accent2: #ff6b35; --text: #f0f0f5;
+--muted: #6b6b80; --border: rgba(255,255,255,0.07); --error: #ff4747;
+}
+body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); }
+.app { max-width: 430px; margin: 0 auto; min-height: 100vh; background: var(--bg); position: relative; }
+
+/* AUTH */
+.auth-screen { min-height: 100vh; display: flex; flex-direction: column; padding: 0 24px 40px; animation: fadeUp 0.4s ease both; }
+.auth-logo { font-family: 'Bebas Neue', sans-serif; font-size: 52px; letter-spacing: 4px; color: var(--accent); }
+.auth-tagline { font-size: 14px; color: var(--muted); margin-top: 8px; }
+.auth-title { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 2px; margin-bottom: 6px; }
+.auth-sub { font-size: 14px; color: var(--muted); margin-bottom: 28px; }
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; display: block; }
+.form-input { width: 100%; padding: 16px 18px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; outline: none; transition: border-color 0.2s; }
+.form-input:focus { border-color: var(--accent); }
+.form-input::placeholder { color: var(--muted); }
+.form-input.err { border-color: var(--error); }
+.error-msg { font-size: 12px; color: var(--error); margin-top: 6px; }
+.auth-btn { width: 100%; padding: 18px; background: var(--accent); color: #0a0a0f; border: none; border-radius: 16px; font-weight: 800; font-size: 17px; cursor: pointer; font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.15s; }
+.auth-btn:disabled { opacity: 0.6; }
+.social-btn { width: 100%; padding: 16px; background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 16px; font-weight: 600; font-size: 15px; cursor: pointer; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; }
+.auth-switch { text-align: center; margin-top: 24px; font-size: 14px; color: var(--muted); }
+.auth-switch span { color: var(--accent); font-weight: 600; cursor: pointer; }
+.auth-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--muted); font-size: 12px; }
+.auth-divider::before,.auth-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+.alert-box { background: rgba(255,71,71,0.1); border: 1px solid rgba(255,71,71,0.3); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; color: var(--error); font-size: 14px; }
+.spinner { width: 20px; height: 20px; border: 2px solid rgba(0,0,0,0.3); border-top-color: #0a0a0f; border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ONBOARDING */
+.onboarding { min-height: 100vh; padding: 60px 24px 40px; animation: fadeUp 0.4s ease both; }
+.step-dots { display: flex; gap: 6px; margin-bottom: 32px; }
+.step-dot { height: 4px; border-radius: 2px; background: var(--border); flex: 1; transition: background 0.3s; }
+.step-dot.active { background: var(--accent); }
+.onboard-title { font-family: 'Bebas Neue', sans-serif; font-size: 34px; letter-spacing: 2px; margin-bottom: 8px; }
+.onboard-sub { font-size: 14px; color: var(--muted); margin-bottom: 28px; }
+.sport-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 24px; }
+.sport-option { background: var(--card); border: 1.5px solid var(--border); border-radius: 16px; padding: 16px 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; color: var(--muted); font-weight: 500; transition: all 0.2s; }
+.sport-option.selected { border-color: var(--accent); background: rgba(232,255,71,0.08); color: var(--accent); }
+.sport-option span:first-child { font-size: 28px; }
+.level-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+.level-option { background: var(--card); border: 1.5px solid var(--border); border-radius: 16px; padding: 16px 20px; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: all 0.2s; }
+.level-option.selected { border-color: var(--accent); background: rgba(232,255,71,0.06); }
+.level-name { font-weight: 600; font-size: 15px; }
+.level-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.level-option.selected .level-name { color: var(--accent); }
+.onboard-btn { width: 100%; padding: 18px; background: var(--accent); color: #0a0a0f; border: none; border-radius: 16px; font-weight: 800; font-size: 17px; cursor: pointer; font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; }
+
+/* NAV */
 .nav { display: flex; justify-content: space-around; padding: 12px 0 16px; background: rgba(10,10,15,0.97); backdrop-filter: blur(20px); border-top: 1px solid var(--border); position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; z-index: 100; }
 .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; background: none; border: none; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; }
 .nav-item.active { color: var(--accent); }
 .nav-item.active .nav-icon { background: rgba(232,255,71,0.15); }
 .nav-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s; }
- 
- /* HEADER */
+
+/* HEADER */
 .header { padding: 52px 20px 16px; display: flex; justify-content: space-between; align-items: center; }
 .logo { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; color: var(--accent); }
 .avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
- 
+
 /* FEED */
 .feed { padding: 0 16px 90px; }
 .section-title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1.5px; margin: 18px 0 12px; }
@@ -101,8 +115,8 @@ const styles = `
 .sport-pills::-webkit-scrollbar { display: none; }
 .pill { padding: 7px 14px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); font-size: 12px; font-weight: 500; white-space: nowrap; cursor: pointer; }
 .pill.active { background: var(--accent); color: #0a0a0f; border-color: var(--accent); font-weight: 600; }
- 
- /* PARTNER CARD */
+
+/* PARTNER CARD */
 .partner-card { background: var(--card); border-radius: 20px; overflow: hidden; margin-bottom: 12px; border: 1px solid var(--border); animation: fadeUp 0.4s ease both; }
 @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
 .card-banner { height: 90px; display: flex; align-items: flex-end; padding: 10px; }
@@ -118,7 +132,7 @@ const styles = `
 .btn-ghost { padding: 9px 12px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; font-size: 14px; cursor: pointer; }
 .btn-added { padding: 9px 12px; background: rgba(232,255,71,0.1); color: var(--accent); border: 1px solid rgba(232,255,71,0.3); border-radius: 10px; font-size: 12px; font-weight: 600; cursor: default; }
 
- /* EVENTS */
+/* EVENTS */
 .event-card { background: var(--card); border-radius: 18px; padding: 14px; margin-bottom: 12px; border: 1px solid var(--border); animation: fadeUp 0.4s ease both; }
 .event-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .event-emoji { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
@@ -132,8 +146,8 @@ const styles = `
 .dot { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--card); display: flex; align-items: center; justify-content: center; font-size: 11px; margin-left: -5px; background: var(--surface); }
 .dot:first-child { margin-left: 0; }
 .join-btn { margin-left: auto; padding: 7px 14px; background: var(--accent); color: #0a0a0f; border: none; border-radius: 9px; font-weight: 700; font-size: 11px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
- 
- /* MAP */
+
+/* MAP */
 .map-screen { padding: 52px 0 90px; animation: fadeUp 0.3s ease both; }
 .map-header { padding: 0 16px 14px; display: flex; justify-content: space-between; align-items: center; }
 .map-container { position: relative; height: 340px; background: #0f1520; overflow: hidden; margin-bottom: 0; }
@@ -158,7 +172,7 @@ const styles = `
 .locate-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .locate-btn { padding: 8px 14px; background: var(--accent); color: #0a0a0f; border: none; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
 
- /* CHAT LIST */
+/* CHAT LIST */
 .chat-screen { padding: 52px 0 90px; animation: fadeUp 0.3s ease both; }
 .chat-header { padding: 0 16px 14px; display: flex; justify-content: space-between; align-items: center; }
 .chat-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.15s; }
@@ -171,8 +185,7 @@ const styles = `
 .chat-time { font-size: 11px; color: var(--muted); flex-shrink: 0; }
 .unread-badge { background: var(--accent); color: #0a0a0f; border-radius: 100px; font-size: 10px; font-weight: 800; padding: 2px 7px; margin-top: 4px; display: inline-block; }
 
- 
- /* CHAT ROOM */
+/* CHAT ROOM */
 .chat-room { display: flex; flex-direction: column; height: 100vh; animation: fadeUp 0.2s ease both; }
 .chat-room-header { padding: 52px 16px 14px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); background: var(--bg); }
 .back-btn { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; }
@@ -244,6 +257,7 @@ const styles = `
 .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
 .empty-icon { font-size: 40px; margin-bottom: 12px; }
 `;
+
 const FAKE_USERS = [{ email:"demo@spotu.fr", password:"demo123", name:"Alex Demo", sports:["🏃 Running","🏀 Basket"], level:"Intermédiaire" }];
 
 const ALL_USERS = [
@@ -291,7 +305,7 @@ const [country, setCountry] = useState({ flag: "🏅", name: "", loading: true }
 
 useEffect(() => {
 detectCountry().then(code => {
-const info = COUNTRY_FLAGS[code] || { flag: "🌍", name: code, lang: "fr" };
+const info = COUNTRY_FLAGS[code] || { flag: code, name: code, lang: "fr" };
 setCountry({ ...info, code, loading: false });
 });
 }, []);
@@ -411,7 +425,7 @@ showMsg("🎉 Événement créé !"); setFormData({title:"",date:"",time:"",loca
 setTimeout(()=>setTab("events"),500);
 };
 
- const logout = () => { setUser(null); setScreen("welcome"); setTab("home"); setLoginData({email:"",password:""}); setSignupData({name:"",email:"",password:"",confirm:""}); setErrors({}); setOpenChat(null); };
+const logout = () => { setUser(null); setScreen("welcome"); setTab("home"); setLoginData({email:"",password:""}); setSignupData({name:"",email:"",password:"",confirm:""}); setErrors({}); setOpenChat(null); };
 
 const chatUser = openChat ? ALL_USERS.find(u=>u.id===openChat) : null;
 
@@ -421,8 +435,8 @@ if (screen==="welcome") return (
 <div className="app">
 <div className="auth-screen" style={{justifyContent:"center",textAlign:"center"}}>
 <div style={{paddingTop:80,paddingBottom:40}}>
-<span style={{fontSize:64, display:"block", marginBottom:12, transition:"all 0.4s", filter: country.loading ? "blur(4px)" : "none"}}>
-{country.loading ? "🏅" : country.flag}
+<span style={{fontSize:72, display:"block", marginBottom:12, transition:"all 0.4s"}}>
+{country.loading ? "⏳" : getFlagEmoji(country.code || "FR")}
 </span>
 <div className="auth-logo">SPOTU</div>
 <div className="auth-tagline">Trouve ton partenaire sportif idéal</div>
@@ -436,7 +450,6 @@ Communauté {country.name}
 <div style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"flex-end",gap:12}}>
 <button className="auth-btn" onClick={()=>{setScreen("signup");setErrors({});}}>CRÉER UN COMPTE</button>
 <button className="social-btn" onClick={()=>{setScreen("login");setErrors({});}}>🔑 Se connecter</button>
-<div style={{fontSize:12,color:"var(--muted)",marginTop:8}}>Démo : demo@spotu.fr / demo123</div>
 </div>
 </div>
 </div></>
@@ -513,7 +526,7 @@ if (screen==="onboard") return (
 </div>
 </div></>
 );
- 
+
 // ── CHAT ROOM ──
 if (tab==="messages" && openChat) return (
 <><style>{styles}</style>
@@ -763,6 +776,7 @@ return (
 </>)}
 </div>
 )}
+
 {/* CREATE */}
 {tab==="create"&&(
 <div className="create-form">
@@ -859,5 +873,4 @@ showMsg("✅ Photo de profil mise à jour !");
 </nav>
 </div></>
 );
-}
-
+}s
